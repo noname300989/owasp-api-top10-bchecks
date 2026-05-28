@@ -49,7 +49,7 @@ given request then
             replacing method: "GET"
             replacing path: {regex_replace({base.request.url.path}, "/api/v[0-9]+", `{api_v0}`)}
 
-        if {old_v0.response.status_code} is 200 then
+        if {old_v0.response.status_code} is "200" then
             report issue:
                 severity: medium
                 confidence: tentative
@@ -61,8 +61,8 @@ given request then
             replacing method: "GET"
             replacing path: {regex_replace({base.request.url.path}, "/api/v[0-9]+", `{api_v1}`)}
 
-        if {old_v1.response.status_code} is 200 then
-            if {old_v1.response.body} differs from {base.response.body} then
+        if {old_v1.response.status_code} is "200" then
+            if {old_v1.response} differs from {base.response} then
                 report issue:
                     severity: medium
                     confidence: tentative
@@ -77,7 +77,7 @@ given request then
         replacing method: "GET"
         replacing path: `{api_beta}`
 
-    if {beta_check.response.status_code} is 200 then
+    if {beta_check.response.status_code} is "200" then
         report issue:
             severity: high
             confidence: firm
@@ -89,7 +89,7 @@ given request then
         replacing method: "GET"
         replacing path: `{api_dev}`
 
-    if {dev_check.response.status_code} is 200 then
+    if {dev_check.response.status_code} is "200" then
         report issue:
             severity: high
             confidence: firm
@@ -101,7 +101,7 @@ given request then
         replacing method: "GET"
         replacing path: `{api_test}`
 
-    if {test_check.response.status_code} is 200 then
+    if {test_check.response.status_code} is "200" then
         report issue:
             severity: high
             confidence: firm
@@ -113,7 +113,7 @@ given request then
         replacing method: "GET"
         replacing path: `{api_staging}`
 
-    if {staging_check.response.status_code} is 200 then
+    if {staging_check.response.status_code} is "200" then
         report issue:
             severity: high
             confidence: firm
@@ -125,7 +125,7 @@ given request then
         replacing method: "GET"
         replacing path: `{api_internal}`
 
-    if {internal_check.response.status_code} is 200 then
+    if {internal_check.response.status_code} is "200" then
         report issue:
             severity: high
             confidence: firm
@@ -138,7 +138,7 @@ given request then
         replacing method: "GET"
         replacing path: `{undoc_health}`
 
-    if {health_check.response.status_code} is 200 then
+    if {health_check.response.status_code} is "200" then
         if {health_check.response.body} matches "(status|healthy|ok|up|database|redis|cache|queue|version)" then
             report issue:
                 severity: low
@@ -152,7 +152,7 @@ given request then
         replacing method: "GET"
         replacing path: `{undoc_metrics}`
 
-    if {metrics_check.response.status_code} is 200 then
+    if {metrics_check.response.status_code} is "200" then
         if {metrics_check.response.body} matches "(metric|counter|gauge|histogram|process_|http_|go_|jvm_|node_)" then
             report issue:
                 severity: medium
@@ -166,7 +166,7 @@ given request then
         replacing method: "GET"
         replacing path: `{undoc_version}`
 
-    if {version_check.response.status_code} is 200 then
+    if {version_check.response.status_code} is "200" then
         if {version_check.response.body} matches "(version|build|commit|hash|tag|release|git)" then
             report issue:
                 severity: low
@@ -181,7 +181,7 @@ given request then
         replacing method: "GET"
         replacing path: `{doc_swagger_ui}`
 
-    if {swagger_ui_check.response.status_code} is 200 then
+    if {swagger_ui_check.response.status_code} is "200" then
         if {swagger_ui_check.response.body} matches "(swagger|Swagger UI|api-docs)" then
             report issue:
                 severity: medium
@@ -195,7 +195,7 @@ given request then
         replacing method: "GET"
         replacing path: `{doc_graphql_playground}`
 
-    if {graphql_playground_check.response.status_code} is 200 then
+    if {graphql_playground_check.response.status_code} is "200" then
         if {graphql_playground_check.response.body} matches "(GraphQL Playground|graphql-playground|GraphiQL)" then
             report issue:
                 severity: medium
@@ -209,7 +209,7 @@ given request then
         replacing method: "GET"
         replacing path: `{doc_graphiql}`
 
-    if {graphiql_check.response.status_code} is 200 then
+    if {graphiql_check.response.status_code} is "200" then
         if {graphiql_check.response.body} matches "(GraphiQL|graphiql)" then
             report issue:
                 severity: medium
@@ -224,12 +224,11 @@ given request then
         send request called version_header_check:
             replacing method: {base.request.method}
             appending headers:
-                "Api-Version": "1.0"
-                "X-Api-Version": "1.0"
+                "Api-Version": "1.0",
+                "X-Api-Version": "1.0",
                 "Accept-Version": "1.0"
-
-        if {version_header_check.response.status_code} is 200 then
-            if {version_header_check.response.body} differs from {base.response.body} then
+        if {version_header_check.response.status_code} is "200" then
+            if {version_header_check.response} differs from {base.response} then
                 report issue:
                     severity: medium
                     confidence: tentative
@@ -245,7 +244,7 @@ given request then
             replacing method: "GET"
             replacing path: {regex_replace({base.request.url.path}, "/api/v[0-9]+/[a-z]+.*", "/api/v1/users")}
 
-        if {crud_list.response.status_code} is 200 then
+        if {crud_list.response.status_code} is "200" then
             report issue:
                 severity: low
                 confidence: tentative
@@ -259,8 +258,7 @@ given request then
         replacing method: {base.request.method}
         replacing headers:
             "Accept": "application/xml"
-
-    if {xml_api_check.response.status_code} is 200 then
+    if {xml_api_check.response.status_code} is "200" then
         if {xml_api_check.response.headers} matches "application/xml" then
             report issue:
                 severity: low

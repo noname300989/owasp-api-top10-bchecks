@@ -7,17 +7,17 @@ metadata:
 
 define:
     # Large payload for resource exhaustion detection
-    large_json_array = '[{"id":1},{"id":2},{"id":3},{"id":4},{"id":5},{"id":6},{"id":7},{"id":8},{"id":9},{"id":10},{"id":11},{"id":12},{"id":13},{"id":14},{"id":15},{"id":16},{"id":17},{"id":18},{"id":19},{"id":20}]'
+    large_json_array = "[{\"id\":1},{\"id\":2},{\"id\":3},{\"id\":4},{\"id\":5},{\"id\":6},{\"id\":7},{\"id\":8},{\"id\":9},{\"id\":10},{\"id\":11},{\"id\":12},{\"id\":13},{\"id\":14},{\"id\":15},{\"id\":16},{\"id\":17},{\"id\":18},{\"id\":19},{\"id\":20}]"
     # Pagination abuse
     large_page_size = "100000"
     negative_page = "-1"
     # GraphQL complexity bomb
-    graphql_deep_query = '{"query":"{users{friends{friends{friends{friends{friends{name}}}}}}}"}'
-    graphql_batch = '[{"query":"{user(id:1){name}}"},{"query":"{user(id:2){name}}"},{"query":"{user(id:3){name}}"},{"query":"{user(id:4){name}}"},{"query":"{user(id:5){name}}"},{"query":"{user(id:6){name}}"},{"query":"{user(id:7){name}}"},{"query":"{user(id:8){name}}"},{"query":"{user(id:9){name}}"},{"query":"{user(id:10){name}}"}]'
+    graphql_deep_query = "{\"query\":\"{users{friends{friends{friends{friends{friends{name}}}}}}}\"}"
+    graphql_batch = "[{\"query\":\"{user(id:1){name}}\"},{\"query\":\"{user(id:2){name}}\"},{\"query\":\"{user(id:3){name}}\"},{\"query\":\"{user(id:4){name}}\"},{\"query\":\"{user(id:5){name}}\"},{\"query\":\"{user(id:6){name}}\"},{\"query\":\"{user(id:7){name}}\"},{\"query\":\"{user(id:8){name}}\"},{\"query\":\"{user(id:9){name}}\"},{\"query\":\"{user(id:10){name}}\"}]"
     # Regex DoS payloads
     regex_dos_email = "a]@a]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]a.com"
     # XML bomb (Billion Laughs) - small variant for detection
-    xml_bomb = '<?xml version="1.0"?><!DOCTYPE lolz [<!ENTITY lol "lol"><!ENTITY lol2 "&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;"><!ENTITY lol3 "&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;">]><root>&lol3;</root>'
+    xml_bomb = "<?xml version=\"1.0\"?><!DOCTYPE lolz [<!ENTITY lol \"lol\"><!ENTITY lol2 \"&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;&lol;\"><!ENTITY lol3 \"&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;&lol2;\">]><root>&lol3;</root>"
 
 given request then
     if {base.request.url} matches "(api|v[0-9]|rest|graphql|service|resource)" then
@@ -40,7 +40,7 @@ given request then
 
         # Check if rate limiting headers are present
         if not({rate_check_5.response.headers} matches "(X-RateLimit|X-Rate-Limit|RateLimit|Retry-After|x-ratelimit)") then
-            if not({rate_check_5.response.status_code} is 429) then
+            if not({rate_check_5.response.status_code} is "429") then
                 report issue:
                     severity: medium
                     confidence: tentative
@@ -55,7 +55,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(page_size|pageSize|per_page|limit|size|count)=[0-9]+", `$1={large_page_size}`)}
 
-            if {pagination_abuse.response.status_code} is 200 then
+            if {pagination_abuse.response.status_code} is "200" then
                 report issue:
                     severity: medium
                     confidence: tentative
@@ -68,7 +68,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(page|offset)=[0-9]+", `$1={negative_page}`)}
 
-            if {negative_page_check.response.status_code} is 200 then
+            if {negative_page_check.response.status_code} is "200" then
                 report issue:
                     severity: low
                     confidence: tentative
@@ -81,7 +81,7 @@ given request then
         if {base.request.method} is "GET" then
             if {base.request.url.path} matches "(users|accounts|records|items|products|orders|transactions|list|search|query)" then
                 if not({base.request.url.query} matches "(page|limit|offset|cursor)") then
-                    if {base.response.status_code} is 200 then
+                    if {base.response.status_code} is "200" then
                         report issue:
                             severity: low
                             confidence: tentative
@@ -101,7 +101,7 @@ given request then
                     "Content-Type": "application/json"
                 replacing body: `{graphql_deep_query}`
 
-            if {graphql_depth_check.response.status_code} is 200 then
+            if {graphql_depth_check.response.status_code} is "200" then
                 if not({graphql_depth_check.response.body} matches "(depth|complexity|too deep|max.*exceeded|query.*limit)") then
                     report issue:
                         severity: medium
@@ -118,7 +118,7 @@ given request then
                     "Content-Type": "application/json"
                 replacing body: `{graphql_batch}`
 
-            if {graphql_batch_check.response.status_code} is 200 then
+            if {graphql_batch_check.response.status_code} is "200" then
                 report issue:
                     severity: medium
                     confidence: tentative
@@ -133,7 +133,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing body: `{large_json_array}`
 
-            if {large_body_check.response.status_code} is 200 then
+            if {large_body_check.response.status_code} is "200" then
                 report issue:
                     severity: low
                     confidence: tentative
@@ -150,7 +150,7 @@ given request then
                     "Content-Type": "application/xml"
                 replacing body: `{xml_bomb}`
 
-            if {xml_bomb_check.response.status_code} is 200 then
+            if {xml_bomb_check.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: firm
@@ -178,7 +178,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(search|query|q|filter|keyword)=[^&]+", `$1=*`)}
 
-            if {wildcard_check.response.status_code} is 200 then
+            if {wildcard_check.response.status_code} is "200" then
                 report issue:
                     severity: low
                     confidence: tentative

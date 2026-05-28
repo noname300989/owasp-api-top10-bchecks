@@ -15,9 +15,6 @@ define:
     options_method = "OPTIONS"
     trace_method = "TRACE"
     # Debug/Error payloads
-    debug_param = "?debug=true&verbose=1&test=1"
-    error_trigger_json = '{"":"","__proto__":{"isAdmin":true}}'
-    error_trigger_type = '{"id":"not_a_number"}'
     # Path traversal for config files
     config_path_1 = "/.env"
     config_path_2 = "/config.json"
@@ -41,7 +38,6 @@ given request then
         replacing method: {base.request.method}
         appending headers:
             "Origin": `{cors_evil_origin}`
-
     if {cors_evil.response.headers} matches "Access-Control-Allow-Origin" then
         if {cors_evil.response.headers} matches "evil-attacker.com" then
             report issue:
@@ -50,7 +46,7 @@ given request then
                 detail: "CORS Misconfiguration - Origin Reflection: The API reflects arbitrary Origin headers in Access-Control-Allow-Origin, allowing any website to make cross-origin requests and read responses. This enables data theft via malicious web pages."
                 remediation: "Whitelist specific trusted origins. Never reflect the Origin header directly. Avoid using Access-Control-Allow-Origin: *. Validate origins against a strict allowlist."
         end if
-        if {cors_evil.response.headers} matches "Access-Control-Allow-Origin: \\*" then
+        if {cors_evil.response.headers} matches "Access-Control-Allow-Origin: \*" then
             if {cors_evil.response.headers} matches "Access-Control-Allow-Credentials: true" then
                 report issue:
                     severity: high
@@ -66,7 +62,6 @@ given request then
         replacing method: {base.request.method}
         appending headers:
             "Origin": `{cors_null_origin}`
-
     if {cors_null.response.headers} matches "Access-Control-Allow-Origin: null" then
         report issue:
             severity: high
@@ -76,7 +71,7 @@ given request then
     end if
 
     # Test 2: Missing Security Headers
-    if {base.response.status_code} is 200 then
+    if {base.response.status_code} is "200" then
         if not({base.response.headers} matches "Strict-Transport-Security") then
             report issue:
                 severity: medium
@@ -126,7 +121,7 @@ given request then
     send request called trace_check:
         replacing method: "TRACE"
 
-    if {trace_check.response.status_code} is 200 then
+    if {trace_check.response.status_code} is "200" then
         if {trace_check.response.body} matches "TRACE" then
             report issue:
                 severity: medium
@@ -139,9 +134,9 @@ given request then
     # Test 4: Verbose Error Messages
     send request called error_check:
         replacing method: "POST"
-        replacing body: `{error_trigger_type}`
+        replacing body: "{\"id\":\"not_a_number\"}"
 
-    if {error_check.response.body} matches "(stack trace|traceback|exception|at \\w+\\.\\w+\\(|<b>Fatal error</b>|SQL syntax|ORA-[0-9]|Microsoft OLE DB|ODBC Error|pg_query|mysql_fetch|sqlite3\\.)" then
+    if {error_check.response.body} matches "(stack trace|traceback|exception|at \w+\.\w+\(|<b>Fatal error</b>|SQL syntax|ORA-[0-9]|Microsoft OLE DB|ODBC Error|pg_query|mysql_fetch|sqlite3\.)" then
         report issue:
             severity: medium
             confidence: firm
@@ -154,7 +149,7 @@ given request then
         replacing method: "GET"
         replacing path: `{config_path_1}`
 
-    if {env_check.response.status_code} is 200 then
+    if {env_check.response.status_code} is "200" then
         if {env_check.response.body} matches "(DB_|DATABASE_|API_KEY|SECRET|PASSWORD|AWS_|REDIS_|MONGO_)" then
             report issue:
                 severity: high
@@ -169,7 +164,7 @@ given request then
         replacing method: "GET"
         replacing path: `{config_path_5}`
 
-    if {swagger_check.response.status_code} is 200 then
+    if {swagger_check.response.status_code} is "200" then
         if {swagger_check.response.body} matches "(swagger|openapi|paths|definitions)" then
             report issue:
                 severity: medium
@@ -184,7 +179,7 @@ given request then
         replacing method: "GET"
         replacing path: `{config_path_10}`
 
-    if {actuator_check.response.status_code} is 200 then
+    if {actuator_check.response.status_code} is "200" then
         if {actuator_check.response.body} matches "(actuator|_links|health|env|beans|metrics)" then
             report issue:
                 severity: high
@@ -199,7 +194,7 @@ given request then
         replacing method: "GET"
         replacing path: `{config_path_11}`
 
-    if {actuator_env_check.response.status_code} is 200 then
+    if {actuator_env_check.response.status_code} is "200" then
         if {actuator_env_check.response.body} matches "(spring|database|password|secret|key)" then
             report issue:
                 severity: high
@@ -214,7 +209,7 @@ given request then
         replacing method: "GET"
         replacing path: `{config_path_4}`
 
-    if {git_check.response.status_code} is 200 then
+    if {git_check.response.status_code} is "200" then
         if {git_check.response.body} matches "(\[core\]|\[remote|repositoryformatversion)" then
             report issue:
                 severity: high
@@ -227,10 +222,10 @@ given request then
     # Test 6: Debug Mode Detection
     send request called debug_check:
         replacing method: "GET"
-        replacing path: `{base.request.url.path}{debug_param}`
+        replacing path: `{base.request.url.path}?debug=true&verbose=1&test=1`
 
-    if {debug_check.response.status_code} is 200 then
-        if {debug_check.response.body} differs from {base.response.body} then
+    if {debug_check.response.status_code} is "200" then
+        if {debug_check.response} differs from {base.response} then
             if {debug_check.response.body} matches "(debug|trace|verbose|internal|stack|sql|query)" then
                 report issue:
                     severity: medium
@@ -245,9 +240,9 @@ given request then
     if {base.request.method} matches "(POST|PUT|PATCH)" then
         send request called proto_check:
             replacing method: {base.request.method}
-            replacing body: `{error_trigger_json}`
+            replacing body: "{\"\":\"\",\"__proto__\":{\"isAdmin\":true}}"
 
-        if {proto_check.response.status_code} is 200 then
+        if {proto_check.response.status_code} is "200" then
             if {proto_check.response.body} matches "(isAdmin|admin.*true)" then
                 report issue:
                     severity: high
@@ -262,11 +257,11 @@ given request then
     send request called smuggling_cl_te:
         replacing method: "POST"
         appending headers:
-            "Transfer-Encoding": "chunked"
+            "Transfer-Encoding": "chunked",
             "Content-Length": "4"
         replacing body: "0\r\n\r\nG"
 
-    if {smuggling_cl_te.response.status_code} is 200 then
+    if {smuggling_cl_te.response.status_code} is "200" then
         report issue:
             severity: low
             confidence: tentative

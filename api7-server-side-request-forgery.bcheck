@@ -50,7 +50,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(url|uri|link|src|source|dest|destination|target|path|file|callback|imgurl|image_url|webhook|endpoint|proxy|fetch|load)=[^&]+", `$1={aws_metadata}`)}
 
-            if {ssrf_aws.response.status_code} is 200 then
+            if {ssrf_aws.response.status_code} is "200" then
                 if {ssrf_aws.response.body} matches "(ami-id|instance-id|instance-type|hostname|local-ipv4|iam|security-credentials)" then
                     report issue:
                         severity: high
@@ -66,8 +66,7 @@ given request then
                 replacing query_string: {regex_replace({base.request.url.query}, "(url|uri|link|src|source|dest|destination|target|path|callback|webhook|endpoint|proxy|fetch)=[^&]+", `$1={gcp_metadata}`)}
                 appending headers:
                     "Metadata-Flavor": "Google"
-
-            if {ssrf_gcp.response.status_code} is 200 then
+            if {ssrf_gcp.response.status_code} is "200" then
                 if {ssrf_gcp.response.body} matches "(project|instance|zone|service-accounts)" then
                     report issue:
                         severity: high
@@ -82,8 +81,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(url|uri|link|src|source|dest|target|callback|webhook|endpoint|proxy|fetch)=[^&]+", `$1={localhost_http}`)}
 
-            if {ssrf_localhost.response.status_code} is 200 then
-                if {ssrf_localhost.response.body} differs from {base.response.body} then
+            if {ssrf_localhost.response.status_code} is "200" then
+                if {ssrf_localhost.response} differs from {base.response} then
                     report issue:
                         severity: high
                         confidence: firm
@@ -97,8 +96,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(url|uri|link|src|source|dest|target|callback|webhook|endpoint|proxy|fetch)=[^&]+", `$1={ssrf_decimal}`)}
 
-            if {ssrf_decimal.response.status_code} is 200 then
-                if {ssrf_decimal.response.body} differs from {base.response.body} then
+            if {ssrf_decimal.response.status_code} is "200" then
+                if {ssrf_decimal.response} differs from {base.response} then
                     report issue:
                         severity: high
                         confidence: firm
@@ -112,8 +111,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(url|uri|link|src|source|dest|target|callback|webhook|endpoint|proxy|fetch)=[^&]+", `$1={ssrf_hex}`)}
 
-            if {ssrf_hex.response.status_code} is 200 then
-                if {ssrf_hex.response.body} differs from {base.response.body} then
+            if {ssrf_hex.response.status_code} is "200" then
+                if {ssrf_hex.response} differs from {base.response} then
                     report issue:
                         severity: high
                         confidence: firm
@@ -127,8 +126,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(url|uri|link|src|source|dest|target|callback|webhook|endpoint|proxy|fetch)=[^&]+", `$1={ssrf_octal}`)}
 
-            if {ssrf_octal.response.status_code} is 200 then
-                if {ssrf_octal.response.body} differs from {base.response.body} then
+            if {ssrf_octal.response.status_code} is "200" then
+                if {ssrf_octal.response} differs from {base.response} then
                     report issue:
                         severity: high
                         confidence: firm
@@ -142,8 +141,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(url|uri|link|src|source|dest|target|callback|webhook|endpoint|proxy|fetch)=[^&]+", `$1={ssrf_url_encoded}`)}
 
-            if {ssrf_url_encoded_check.response.status_code} is 200 then
-                if {ssrf_url_encoded_check.response.body} differs from {base.response.body} then
+            if {ssrf_url_encoded_check.response.status_code} is "200" then
+                if {ssrf_url_encoded_check.response} differs from {base.response} then
                     report issue:
                         severity: high
                         confidence: firm
@@ -157,8 +156,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(url|uri|link|src|source|dest|target|callback|webhook|endpoint|proxy|fetch)=[^&]+", `$1={ssrf_nip_io}`)}
 
-            if {ssrf_nip.response.status_code} is 200 then
-                if {ssrf_nip.response.body} differs from {base.response.body} then
+            if {ssrf_nip.response.status_code} is "200" then
+                if {ssrf_nip.response} differs from {base.response} then
                     report issue:
                         severity: high
                         confidence: firm
@@ -172,7 +171,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(url|uri|link|src|source|dest|target|path|file|fetch)=[^&]+", `$1={ssrf_file}`)}
 
-            if {ssrf_file_check.response.status_code} is 200 then
+            if {ssrf_file_check.response.status_code} is "200" then
                 if {ssrf_file_check.response.body} matches "(root:|nobody:|daemon:)" then
                     report issue:
                         severity: high
@@ -187,8 +186,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(url|uri|link|src|source|dest|target|callback|webhook|endpoint|proxy|fetch)=[^&]+", `$1={localhost_ipv6}`)}
 
-            if {ssrf_ipv6.response.status_code} is 200 then
-                if {ssrf_ipv6.response.body} differs from {base.response.body} then
+            if {ssrf_ipv6.response.status_code} is "200" then
+                if {ssrf_ipv6.response} differs from {base.response} then
                     report issue:
                         severity: high
                         confidence: firm
@@ -202,7 +201,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(url|uri|link|src|source|dest|target|callback|webhook|endpoint|proxy|fetch)=[^&]+", `$1={ssrf_redirect}`)}
 
-            if {ssrf_redirect_check.response.status_code} is 200 then
+            if {ssrf_redirect_check.response.status_code} is "200" then
                 if {ssrf_redirect_check.response.body} matches "(ami-id|instance-id|meta-data)" then
                     report issue:
                         severity: high
@@ -220,7 +219,7 @@ given request then
                     replacing method: {base.request.method}
                     replacing body: {regex_replace({base.request.body}, "(\"(?:url|uri|link|src|source|href|endpoint|callback|webhook|image|avatar|icon|logo|feed)\"\\s*:\\s*\")[^\"]+\"", `$1http://169.254.169.254/latest/meta-data/"`)}
 
-                if {ssrf_body_check.response.status_code} is 200 then
+                if {ssrf_body_check.response.status_code} is "200" then
                     if {ssrf_body_check.response.body} matches "(ami-id|instance-id|meta-data|security-credentials)" then
                         report issue:
                             severity: high

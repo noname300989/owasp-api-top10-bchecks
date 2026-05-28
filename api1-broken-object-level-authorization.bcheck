@@ -24,7 +24,7 @@ define:
     id_unicode_bypass = "\u0031"
     # Array/object injection for mass assignment
     id_array_inject = "1,2,3"
-    id_json_inject = '{"id":1,"role":"admin"}'
+    id_json_inject = "{\"id\":1,\"role\":\"admin\"}"
     # Parameter pollution
     id_param_pollution = "1&id=2"
 
@@ -38,7 +38,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing path: {regex_replace({base.request.url.path}, "/[0-9]+", `/{id_numeric_1}`)}
 
-            if {bola_numeric_check.response.status_code} is 200 then
+            if {bola_numeric_check.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: tentative
@@ -53,7 +53,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing path: {regex_replace({base.request.url.path}, "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", `{id_uuid_null}`)}
 
-            if {bola_uuid_check.response.status_code} is 200 then
+            if {bola_uuid_check.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: tentative
@@ -68,7 +68,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "((?:id|user_id|userId|account_id|accountId|obj_id|record_id|doc_id))=[^&]+", `$1={id_numeric_1}`)}
 
-            if {bola_param_check.response.status_code} is 200 then
+            if {bola_param_check.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: tentative
@@ -83,8 +83,8 @@ given request then
                 replacing method: {base.request.method}
                 appending query_string: "&id=1&id=2"
 
-            if {bola_hpp_check.response.status_code} is 200 then
-                if {bola_hpp_check.response.body} differs from {base.response.body} then
+            if {bola_hpp_check.response.status_code} is "200" then
+                if {bola_hpp_check.response} differs from {base.response} then
                     report issue:
                         severity: high
                         confidence: tentative
@@ -99,7 +99,7 @@ given request then
             send request called bola_method_switch:
                 replacing method: "POST"
 
-            if {bola_method_switch.response.status_code} is 200 then
+            if {bola_method_switch.response.status_code} is "200" then
                 report issue:
                     severity: medium
                     confidence: tentative
@@ -114,7 +114,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing path: {regex_replace({base.request.url.path}, "/([^/]+)/[0-9]+$", `/$1/../$1/1`)}
 
-            if {bola_traversal.response.status_code} is 200 then
+            if {bola_traversal.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: tentative
@@ -129,9 +129,9 @@ given request then
                 replacing method: "POST"
                 replacing headers:
                     "Content-Type": "application/json"
-                replacing body: '{"query":"query{node(id:\"1\"){... on User{id email name role}}}"}'
+                replacing body: "{\"query\":\"query{node(id:\\\"1\\\"){... on User{id email name role}}}\"}"
 
-            if {bola_graphql.response.status_code} is 200 then
+            if {bola_graphql.response.status_code} is "200" then
                 if not({bola_graphql.response.body} matches "(error|unauthorized|forbidden|denied)") then
                     report issue:
                         severity: high

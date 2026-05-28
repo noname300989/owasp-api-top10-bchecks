@@ -40,7 +40,7 @@ given request then
             send request called method_delete:
                 replacing method: "DELETE"
 
-            if {method_delete.response.status_code} is 200 then
+            if {method_delete.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: firm
@@ -51,9 +51,9 @@ given request then
             # Try PUT
             send request called method_put:
                 replacing method: "PUT"
-                replacing body: '{"test":"bfla_check"}'
+                replacing body: "{\"test\":\"bfla_check\"}"
 
-            if {method_put.response.status_code} is 200 then
+            if {method_put.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: tentative
@@ -64,9 +64,9 @@ given request then
             # Try PATCH
             send request called method_patch:
                 replacing method: "PATCH"
-                replacing body: '{"test":"bfla_check"}'
+                replacing body: "{\"test\":\"bfla_check\"}"
 
-            if {method_patch.response.status_code} is 200 then
+            if {method_patch.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: tentative
@@ -79,7 +79,7 @@ given request then
         send request called admin_check_1:
             replacing path: `{admin_paths_1}`
 
-        if {admin_check_1.response.status_code} is 200 then
+        if {admin_check_1.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -90,7 +90,7 @@ given request then
         send request called admin_check_4:
             replacing path: `{admin_paths_4}`
 
-        if {admin_check_4.response.status_code} is 200 then
+        if {admin_check_4.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -101,7 +101,7 @@ given request then
         send request called admin_check_6:
             replacing path: `{admin_paths_6}`
 
-        if {admin_check_6.response.status_code} is 200 then
+        if {admin_check_6.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -112,7 +112,7 @@ given request then
         send request called admin_check_9:
             replacing path: `{admin_paths_9}`
 
-        if {admin_check_9.response.status_code} is 200 then
+        if {admin_check_9.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -123,7 +123,7 @@ given request then
         send request called admin_check_11:
             replacing path: `{admin_paths_11}`
 
-        if {admin_check_11.response.status_code} is 200 then
+        if {admin_check_11.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -136,7 +136,7 @@ given request then
         send request called waf_bypass_1:
             replacing path: `{waf_bypass_path_1}`
 
-        if {waf_bypass_1.response.status_code} is 200 then
+        if {waf_bypass_1.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -148,7 +148,7 @@ given request then
         send request called waf_bypass_2:
             replacing path: `{waf_bypass_path_2}`
 
-        if {waf_bypass_2.response.status_code} is 200 then
+        if {waf_bypass_2.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -160,7 +160,7 @@ given request then
         send request called waf_bypass_3:
             replacing path: `{waf_bypass_path_3}`
 
-        if {waf_bypass_3.response.status_code} is 200 then
+        if {waf_bypass_3.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -172,7 +172,7 @@ given request then
         send request called waf_bypass_5:
             replacing path: `{waf_bypass_path_5}`
 
-        if {waf_bypass_5.response.status_code} is 200 then
+        if {waf_bypass_5.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -184,7 +184,7 @@ given request then
         send request called waf_bypass_6:
             replacing path: `{waf_bypass_path_6}`
 
-        if {waf_bypass_6.response.status_code} is 200 then
+        if {waf_bypass_6.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -196,7 +196,7 @@ given request then
         send request called waf_bypass_10:
             replacing path: `{waf_bypass_path_10}`
 
-        if {waf_bypass_10.response.status_code} is 200 then
+        if {waf_bypass_10.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: firm
@@ -209,8 +209,7 @@ given request then
             replacing method: "GET"
             appending headers:
                 "X-HTTP-Method-Override": "DELETE"
-
-        if {method_override_delete.response.status_code} is 200 then
+        if {method_override_delete.response.status_code} is "200" then
             report issue:
                 severity: high
                 confidence: tentative
@@ -222,8 +221,7 @@ given request then
             replacing method: "POST"
             appending headers:
                 "X-HTTP-Method": "PUT"
-
-        if {method_override_put.response.status_code} is 200 then
+        if {method_override_put.response.status_code} is "200" then
             report issue:
                 severity: medium
                 confidence: tentative
@@ -237,8 +235,8 @@ given request then
                 replacing method: {base.request.method}
                 replacing path: {regex_replace({base.request.url.path}, "/v[0-9]+/", `/v1/`)}
 
-            if {version_bypass.response.status_code} is 200 then
-                if {version_bypass.response.body} differs from {base.response.body} then
+            if {version_bypass.response.status_code} is "200" then
+                if {version_bypass.response} differs from {base.response} then
                     report issue:
                         severity: medium
                         confidence: tentative
@@ -254,7 +252,7 @@ given request then
                 replacing method: {base.request.method}
                 replacing path: {regex_replace({base.request.url.path}, "/users/", `/admins/`)}
 
-            if {user_to_admin.response.status_code} is 200 then
+            if {user_to_admin.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: tentative

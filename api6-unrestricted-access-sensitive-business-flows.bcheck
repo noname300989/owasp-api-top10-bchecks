@@ -10,13 +10,13 @@ define:
     bot_bypass_ua_1 = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
     bot_bypass_ua_2 = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Safari/605.1.15"
     # Bulk registration payload
-    bulk_register = '{"email":"test_enum_1@example.com","password":"TestP@ss123!","name":"Test User"}'
-    bulk_register_2 = '{"email":"test_enum_2@example.com","password":"TestP@ss123!","name":"Test User 2"}'
-    bulk_register_3 = '{"email":"test_enum_3@example.com","password":"TestP@ss123!","name":"Test User 3"}'
+    bulk_register = "{\"email\":\"test_enum_1@example.com\",\"password\":\"TestP@ss123!\",\"name\":\"Test User\"}"
+    bulk_register_2 = "{\"email\":\"test_enum_2@example.com\",\"password\":\"TestP@ss123!\",\"name\":\"Test User 2\"}"
+    bulk_register_3 = "{\"email\":\"test_enum_3@example.com\",\"password\":\"TestP@ss123!\",\"name\":\"Test User 3\"}"
     # Data export abuse
-    export_all = '{"format":"csv","filter":"*","limit":999999}'
+    export_all = "{\"format\":\"csv\",\"filter\":\"*\",\"limit\":999999}"
     # Coupon/referral abuse
-    coupon_payload = '{"coupon":"TEST","referral_code":"REF123"}'
+    coupon_payload = "{\"coupon\":\"TEST\",\"referral_code\":\"REF123\"}"
 
 given request then
     if {base.request.url} matches "(api|v[0-9]|rest|graphql|service)" then
@@ -37,9 +37,9 @@ given request then
                     replacing method: "POST"
                     replacing body: `{bulk_register_3}`
 
-                if {reg_check_1.response.status_code} is 200 then
-                    if {reg_check_2.response.status_code} is 200 then
-                        if {reg_check_3.response.status_code} is 200 then
+                if {reg_check_1.response.status_code} is "200" then
+                    if {reg_check_2.response.status_code} is "200" then
+                        if {reg_check_3.response.status_code} is "200" then
                             report issue:
                                 severity: high
                                 confidence: tentative
@@ -61,8 +61,8 @@ given request then
                 send request called purchase_check_2:
                     replacing method: "POST"
 
-                if {purchase_check_1.response.status_code} is 200 then
-                    if {purchase_check_2.response.status_code} is 200 then
+                if {purchase_check_1.response.status_code} is "200" then
+                    if {purchase_check_2.response.status_code} is "200" then
                         if not({purchase_check_2.response.headers} matches "(X-RateLimit|Retry-After|captcha|challenge)") then
                             report issue:
                                 severity: high
@@ -80,14 +80,14 @@ given request then
             if {base.request.method} is "POST" then
                 send request called spam_check_1:
                     replacing method: "POST"
-                    replacing body: '{"content":"Test review 1","rating":5}'
+                    replacing body: "{\"content\":\"Test review 1\",\"rating\":5}"
 
                 send request called spam_check_2:
                     replacing method: "POST"
-                    replacing body: '{"content":"Test review 2","rating":5}'
+                    replacing body: "{\"content\":\"Test review 2\",\"rating\":5}"
 
-                if {spam_check_1.response.status_code} is 200 then
-                    if {spam_check_2.response.status_code} is 200 then
+                if {spam_check_1.response.status_code} is "200" then
+                    if {spam_check_2.response.status_code} is "200" then
                         report issue:
                             severity: medium
                             confidence: tentative
@@ -104,7 +104,7 @@ given request then
                 replacing method: "POST"
                 replacing body: `{export_all}`
 
-            if {export_check.response.status_code} is 200 then
+            if {export_check.response.status_code} is "200" then
                 report issue:
                     severity: high
                     confidence: tentative
@@ -124,8 +124,8 @@ given request then
                     replacing method: "POST"
                     replacing body: `{coupon_payload}`
 
-                if {coupon_check_1.response.status_code} is 200 then
-                    if {coupon_check_2.response.status_code} is 200 then
+                if {coupon_check_1.response.status_code} is "200" then
+                    if {coupon_check_2.response.status_code} is "200" then
                         report issue:
                             severity: medium
                             confidence: tentative
@@ -143,13 +143,12 @@ given request then
                 replacing headers:
                     "User-Agent": `{bot_bypass_ua_1}`
                 appending headers:
-                    "Accept-Language": "en-US,en;q=0.9"
-                    "Accept-Encoding": "gzip, deflate, br"
-                    "Sec-Fetch-Site": "same-origin"
-                    "Sec-Fetch-Mode": "cors"
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "Sec-Fetch-Site": "same-origin",
+                    "Sec-Fetch-Mode": "cors",
                     "Sec-Fetch-Dest": "empty"
-
-            if {bot_bypass_check.response.status_code} is 200 then
+            if {bot_bypass_check.response.status_code} is "200" then
                 if not({bot_bypass_check.response.body} matches "(captcha|challenge|verify|human|recaptcha|hcaptcha)") then
                     report issue:
                         severity: medium
