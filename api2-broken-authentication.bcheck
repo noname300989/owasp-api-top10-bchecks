@@ -23,210 +23,192 @@ define:
     weak_auth_bearer = "null"
 
 given request then
-    if not({base.request.url} matches "(api|v[0-9]|rest|graphql|service|auth|login|token|oauth|session)")  then
-        log(message: "Skipping non-API endpoint")
-    end if
+    if {base.request.url} matches "(api|v[0-9]|rest|graphql|service|auth|login|token|oauth|session)" then
 
-    # Test 1: No Authentication Required - Remove Authorization header
-    if "Authorization" in {base.request.headers} then
-        send request called no_auth_check:
-            method: {base.request.method}
-            path: {base.request.url}
-            removing header: "Authorization"
+        # Test 1: No Authentication Required - Remove Authorization header
+        if "Authorization" in {base.request.headers} then
+            send request called no_auth_check:
+                removing headers:
+                    "Authorization"
 
-        if {no_auth_check.response.status_code} is 200 then
-            report issue:
-                severity: high
-                confidence: firm
-                detail: "Broken Authentication: API endpoint accessible without any authentication. Removing the Authorization header still returns 200 OK with data."
-                remediation: "Enforce authentication on all API endpoints. Return 401 Unauthorized for requests without valid credentials."
-        end if
-    end if
-
-    # Test 2: JWT Algorithm None attack
-    if "Authorization" in {base.request.headers} then
-        if {base.request.headers} matches "Bearer eyJ" then
-            send request called jwt_none_check:
-                method: {base.request.method}
-                path: {base.request.url}
-                replacing header: "Authorization" => `Bearer {jwt_none_alg}`
-
-            if {jwt_none_check.response.status_code} is 200 then
+            if {no_auth_check.response.status_code} is 200 then
                 report issue:
                     severity: high
                     confidence: firm
-                    detail: "JWT Algorithm None Attack: The API accepts JWT tokens with 'alg: none', allowing attackers to forge arbitrary tokens without knowing the signing key."
-                    remediation: "Reject JWTs with 'none' algorithm. Whitelist allowed algorithms explicitly. Use a well-tested JWT library."
-            end if
-
-            # Test case-variant none algorithms
-            send request called jwt_none_v2:
-                method: {base.request.method}
-                path: {base.request.url}
-                replacing header: "Authorization" => `Bearer {jwt_none_alg_v2}`
-
-            if {jwt_none_v2.response.status_code} is 200 then
-                report issue:
-                    severity: high
-                    confidence: firm
-                    detail: "JWT Algorithm None Attack (case variant): The API accepts 'NONE' algorithm variant, bypassing case-sensitive checks."
-                    remediation: "Perform case-insensitive rejection of 'none' algorithm variants. Whitelist algorithms explicitly."
-            end if
-
-            # Test empty signature
-            send request called jwt_empty_check:
-                method: {base.request.method}
-                path: {base.request.url}
-                replacing header: "Authorization" => `Bearer {jwt_empty_sig}`
-
-            if {jwt_empty_check.response.status_code} is 200 then
-                report issue:
-                    severity: high
-                    confidence: firm
-                    detail: "JWT Empty Signature: The API accepts JWT tokens with missing/empty signatures, indicating signature verification is not enforced."
-                    remediation: "Always verify JWT signatures. Reject tokens with empty or missing signatures."
+                    detail: "Broken Authentication: API endpoint accessible without any authentication. Removing the Authorization header still returns 200 OK with data."
+                    remediation: "Enforce authentication on all API endpoints. Return 401 Unauthorized for requests without valid credentials."
             end if
         end if
-    end if
 
-    # Test 3: WAF Bypass via IP spoofing headers to bypass auth
-    send request called waf_bypass_auth:
-        method: {base.request.method}
-        path: {base.request.url}
-        removing header: "Authorization"
-        appending header: "X-Forwarded-For" => `{waf_bypass_xff}`
-        appending header: "X-Real-IP" => `{waf_bypass_xri}`
-        appending header: "X-Custom-IP-Authorization" => `{waf_bypass_xcip}`
-        appending header: "X-Forwarded-Host" => `{waf_bypass_xfh}`
-        appending header: "X-Original-URL" => {base.request.url}
-        appending header: "X-Rewrite-URL" => {base.request.url}
+        # Test 2: JWT Algorithm None attack
+        if "Authorization" in {base.request.headers} then
+            if {base.request.headers} matches "Bearer eyJ" then
+                send request called jwt_none_check:
+                    replacing headers:
+                        "Authorization": `Bearer {jwt_none_alg}`
 
-    if {waf_bypass_auth.response.status_code} is 200 then
-        report issue:
-            severity: high
-            confidence: tentative
-            detail: "Authentication Bypass via IP Spoofing Headers: Adding X-Forwarded-For/X-Real-IP headers with localhost values bypassed authentication. The API likely trusts these headers for internal network detection."
-            remediation: "Never trust client-supplied IP headers for authentication. Validate authentication independently of network headers."
-    end if
+                if {jwt_none_check.response.status_code} is 200 then
+                    report issue:
+                        severity: high
+                        confidence: firm
+                        detail: "JWT Algorithm None Attack: The API accepts JWT tokens with 'alg: none', allowing attackers to forge arbitrary tokens without knowing the signing key."
+                        remediation: "Reject JWTs with 'none' algorithm. Whitelist allowed algorithms explicitly. Use a well-tested JWT library."
+                end if
 
-    # Test 4: Default/Weak credentials
-    send request called weak_creds_1:
-        method: {base.request.method}
-        path: {base.request.url}
-        replacing header: "Authorization" => `Basic {weak_auth_basic}`
+                # Test case-variant none algorithms
+                send request called jwt_none_v2:
+                    replacing headers:
+                        "Authorization": `Bearer {jwt_none_alg_v2}`
 
-    if {weak_creds_1.response.status_code} is 200 then
-        report issue:
-            severity: high
-            confidence: firm
-            detail: "Default Credentials Accepted: The API accepts admin:admin as valid credentials."
-            remediation: "Remove all default credentials. Enforce strong password policies. Implement account lockout mechanisms."
-    end if
+                if {jwt_none_v2.response.status_code} is 200 then
+                    report issue:
+                        severity: high
+                        confidence: firm
+                        detail: "JWT Algorithm None Attack (case variant): The API accepts 'NONE' algorithm variant, bypassing case-sensitive checks."
+                        remediation: "Perform case-insensitive rejection of 'none' algorithm variants. Whitelist algorithms explicitly."
+                end if
 
-    send request called weak_creds_2:
-        method: {base.request.method}
-        path: {base.request.url}
-        replacing header: "Authorization" => `Basic {weak_auth_basic2}`
+                # Test empty signature
+                send request called jwt_empty_check:
+                    replacing headers:
+                        "Authorization": `Bearer {jwt_empty_sig}`
 
-    if {weak_creds_2.response.status_code} is 200 then
-        report issue:
-            severity: high
-            confidence: firm
-            detail: "Default Credentials Accepted: The API accepts admin:password as valid credentials."
-            remediation: "Remove all default credentials. Enforce strong password policies."
-    end if
+                if {jwt_empty_check.response.status_code} is 200 then
+                    report issue:
+                        severity: high
+                        confidence: firm
+                        detail: "JWT Empty Signature: The API accepts JWT tokens with missing/empty signatures, indicating signature verification is not enforced."
+                        remediation: "Always verify JWT signatures. Reject tokens with empty or missing signatures."
+                end if
+            end if
+        end if
 
-    # Test 5: Bearer token manipulation
-    if "Authorization" in {base.request.headers} then
-        send request called bearer_null:
-            method: {base.request.method}
-            path: {base.request.url}
-            replacing header: "Authorization" => "Bearer null"
+        # Test 3: WAF Bypass via IP spoofing headers to bypass auth
+        send request called waf_bypass_auth:
+            removing headers:
+                "Authorization"
+            appending headers:
+                "X-Forwarded-For": `{waf_bypass_xff}`
+                "X-Real-IP": `{waf_bypass_xri}`
+                "X-Custom-IP-Authorization": `{waf_bypass_xcip}`
+                "X-Forwarded-Host": `{waf_bypass_xfh}`
+                "X-Original-URL": `{base.request.url.path}`
+                "X-Rewrite-URL": `{base.request.url.path}`
 
-        if {bearer_null.response.status_code} is 200 then
+        if {waf_bypass_auth.response.status_code} is 200 then
+            report issue:
+                severity: high
+                confidence: tentative
+                detail: "Authentication Bypass via IP Spoofing Headers: Adding X-Forwarded-For/X-Real-IP headers with localhost values bypassed authentication. The API likely trusts these headers for internal network detection."
+                remediation: "Never trust client-supplied IP headers for authentication. Validate authentication independently of network headers."
+        end if
+
+        # Test 4: Default/Weak credentials
+        send request called weak_creds_1:
+            replacing headers:
+                "Authorization": `Basic {weak_auth_basic}`
+
+        if {weak_creds_1.response.status_code} is 200 then
             report issue:
                 severity: high
                 confidence: firm
-                detail: "Bearer Token Null: The API accepts 'null' as a valid bearer token value."
-                remediation: "Validate bearer tokens properly. Reject null, empty, and placeholder values."
+                detail: "Default Credentials Accepted: The API accepts admin:admin as valid credentials."
+                remediation: "Remove all default credentials. Enforce strong password policies. Implement account lockout mechanisms."
         end if
 
-        send request called bearer_empty:
-            method: {base.request.method}
-            path: {base.request.url}
-            replacing header: "Authorization" => "Bearer "
+        send request called weak_creds_2:
+            replacing headers:
+                "Authorization": `Basic {weak_auth_basic2}`
 
-        if {bearer_empty.response.status_code} is 200 then
+        if {weak_creds_2.response.status_code} is 200 then
             report issue:
                 severity: high
                 confidence: firm
-                detail: "Bearer Token Empty: The API accepts an empty bearer token."
-                remediation: "Validate that bearer tokens are non-empty and properly signed."
+                detail: "Default Credentials Accepted: The API accepts admin:password as valid credentials."
+                remediation: "Remove all default credentials. Enforce strong password policies."
         end if
-    end if
 
-    # Test 6: API Key in predictable locations
-    send request called api_key_check:
-        method: {base.request.method}
-        path: {base.request.url}
-        appending header: "X-API-Key" => "test"
-        appending header: "api-key" => "test"
-        appending header: "apikey" => "test"
-        removing header: "Authorization"
+        # Test 5: Bearer token manipulation
+        if "Authorization" in {base.request.headers} then
+            send request called bearer_null:
+                replacing headers:
+                    "Authorization": "Bearer null"
 
-    if {api_key_check.response.status_code} is 200 then
-        report issue:
-            severity: medium
-            confidence: tentative
-            detail: "API Key Bypass: The endpoint accepts generic API key headers without proper validation, potentially bypassing primary authentication."
-            remediation: "Validate API keys against a secure store. Do not accept arbitrary key values."
-    end if
-
-    # Test 7: Authentication endpoint rate limiting check
-    if {base.request.url} matches "(login|auth|token|signin|authenticate|oauth/token)" then
-        send request called rate_limit_1:
-            method: "POST"
-            path: {base.request.url}
-            headers: {base.request.headers}
-            body: {base.request.body}
-
-        send request called rate_limit_2:
-            method: "POST"
-            path: {base.request.url}
-            headers: {base.request.headers}
-            body: {base.request.body}
-
-        send request called rate_limit_3:
-            method: "POST"
-            path: {base.request.url}
-            headers: {base.request.headers}
-            body: {base.request.body}
-
-        if not({rate_limit_3.response.status_code} is 429) then
-            if not({rate_limit_3.response.headers} matches "(X-RateLimit|Retry-After|rate.limit)") then
+            if {bearer_null.response.status_code} is 200 then
                 report issue:
-                    severity: medium
-                    confidence: tentative
-                    detail: "No Rate Limiting on Authentication Endpoint: Multiple rapid requests to the auth endpoint did not trigger rate limiting (no 429 response or rate limit headers), making brute-force attacks feasible."
-                    remediation: "Implement rate limiting on authentication endpoints. Use exponential backoff, CAPTCHA, or account lockout after failed attempts."
+                    severity: high
+                    confidence: firm
+                    detail: "Bearer Token Null: The API accepts 'null' as a valid bearer token value."
+                    remediation: "Validate bearer tokens properly. Reject null, empty, and placeholder values."
+            end if
+
+            send request called bearer_empty:
+                replacing headers:
+                    "Authorization": "Bearer "
+
+            if {bearer_empty.response.status_code} is 200 then
+                report issue:
+                    severity: high
+                    confidence: firm
+                    detail: "Bearer Token Empty: The API accepts an empty bearer token."
+                    remediation: "Validate that bearer tokens are non-empty and properly signed."
             end if
         end if
-    end if
 
-    # Test 8: Cookie-based auth bypass
-    if "Cookie" in {base.request.headers} then
-        send request called cookie_bypass:
-            method: {base.request.method}
-            path: {base.request.url}
-            removing header: "Cookie"
+        # Test 6: API Key in predictable locations
+        send request called api_key_check:
+            removing headers:
+                "Authorization"
+            appending headers:
+                "X-API-Key": "test"
+                "api-key": "test"
+                "apikey": "test"
 
-        if {cookie_bypass.response.status_code} is 200 then
-            if {cookie_bypass.response.body} differs from {base.response.body} then
-                report issue:
-                    severity: medium
-                    confidence: tentative
-                    detail: "Session Cookie Not Required: Removing session cookies still allows access with different response data, suggesting multiple or weak authentication mechanisms."
-                    remediation: "Enforce consistent authentication checks. Ensure session cookies are validated on every request."
+        if {api_key_check.response.status_code} is 200 then
+            report issue:
+                severity: medium
+                confidence: tentative
+                detail: "API Key Bypass: The endpoint accepts generic API key headers without proper validation, potentially bypassing primary authentication."
+                remediation: "Validate API keys against a secure store. Do not accept arbitrary key values."
+        end if
+
+        # Test 7: Authentication endpoint rate limiting check
+        if {base.request.url} matches "(login|auth|token|signin|authenticate|oauth/token)" then
+            send request called rate_limit_1:
+                replacing method: "POST"
+
+            send request called rate_limit_2:
+                replacing method: "POST"
+
+            send request called rate_limit_3:
+                replacing method: "POST"
+
+            if not({rate_limit_3.response.status_code} is 429) then
+                if not({rate_limit_3.response.headers} matches "(X-RateLimit|Retry-After|rate.limit)") then
+                    report issue:
+                        severity: medium
+                        confidence: tentative
+                        detail: "No Rate Limiting on Authentication Endpoint: Multiple rapid requests to the auth endpoint did not trigger rate limiting (no 429 response or rate limit headers), making brute-force attacks feasible."
+                        remediation: "Implement rate limiting on authentication endpoints. Use exponential backoff, CAPTCHA, or account lockout after failed attempts."
+                end if
             end if
         end if
+
+        # Test 8: Cookie-based auth bypass
+        if "Cookie" in {base.request.headers} then
+            send request called cookie_bypass:
+                removing headers:
+                    "Cookie"
+
+            if {cookie_bypass.response.status_code} is 200 then
+                if {cookie_bypass.response.body} differs from {base.response.body} then
+                    report issue:
+                        severity: medium
+                        confidence: tentative
+                        detail: "Session Cookie Not Required: Removing session cookies still allows access with different response data, suggesting multiple or weak authentication mechanisms."
+                        remediation: "Enforce consistent authentication checks. Ensure session cookies are validated on every request."
+                end if
+            end if
+        end if
+
     end if

@@ -38,10 +38,9 @@ define:
 given request then
     # Test 1: CORS Misconfiguration - Wildcard/Reflected Origin
     send request called cors_evil:
-        method: {base.request.method}
-        path: {base.request.url}
-        headers: {base.request.headers}
-        appending header: "Origin" => `{cors_evil_origin}`
+        replacing method: {base.request.method}
+        appending headers:
+            "Origin": `{cors_evil_origin}`
 
     if {cors_evil.response.headers} matches "Access-Control-Allow-Origin" then
         if {cors_evil.response.headers} matches "evil-attacker.com" then
@@ -64,10 +63,9 @@ given request then
 
     # CORS null origin bypass
     send request called cors_null:
-        method: {base.request.method}
-        path: {base.request.url}
-        headers: {base.request.headers}
-        appending header: "Origin" => `{cors_null_origin}`
+        replacing method: {base.request.method}
+        appending headers:
+            "Origin": `{cors_null_origin}`
 
     if {cors_null.response.headers} matches "Access-Control-Allow-Origin: null" then
         report issue:
@@ -126,9 +124,7 @@ given request then
 
     # Test 3: TRACE Method Enabled (XST)
     send request called trace_check:
-        method: "TRACE"
-        path: {base.request.url}
-        headers: {base.request.headers}
+        replacing method: "TRACE"
 
     if {trace_check.response.status_code} is 200 then
         if {trace_check.response.body} matches "TRACE" then
@@ -142,10 +138,8 @@ given request then
 
     # Test 4: Verbose Error Messages
     send request called error_check:
-        method: "POST"
-        path: {base.request.url}
-        headers: {base.request.headers}
-        body: `{error_trigger_type}`
+        replacing method: "POST"
+        replacing body: `{error_trigger_type}`
 
     if {error_check.response.body} matches "(stack trace|traceback|exception|at \\w+\\.\\w+\\(|<b>Fatal error</b>|SQL syntax|ORA-[0-9]|Microsoft OLE DB|ODBC Error|pg_query|mysql_fetch|sqlite3\\.)" then
         report issue:
@@ -157,8 +151,8 @@ given request then
 
     # Test 5: Sensitive Configuration Files Exposed
     send request called env_check:
-        method: "GET"
-        path: `{config_path_1}`
+        replacing method: "GET"
+        replacing path: `{config_path_1}`
 
     if {env_check.response.status_code} is 200 then
         if {env_check.response.body} matches "(DB_|DATABASE_|API_KEY|SECRET|PASSWORD|AWS_|REDIS_|MONGO_)" then
@@ -172,8 +166,8 @@ given request then
 
     # Swagger/OpenAPI exposed
     send request called swagger_check:
-        method: "GET"
-        path: `{config_path_5}`
+        replacing method: "GET"
+        replacing path: `{config_path_5}`
 
     if {swagger_check.response.status_code} is 200 then
         if {swagger_check.response.body} matches "(swagger|openapi|paths|definitions)" then
@@ -187,8 +181,8 @@ given request then
 
     # Spring Boot Actuator
     send request called actuator_check:
-        method: "GET"
-        path: `{config_path_10}`
+        replacing method: "GET"
+        replacing path: `{config_path_10}`
 
     if {actuator_check.response.status_code} is 200 then
         if {actuator_check.response.body} matches "(actuator|_links|health|env|beans|metrics)" then
@@ -202,8 +196,8 @@ given request then
 
     # Actuator env (secrets exposure)
     send request called actuator_env_check:
-        method: "GET"
-        path: `{config_path_11}`
+        replacing method: "GET"
+        replacing path: `{config_path_11}`
 
     if {actuator_env_check.response.status_code} is 200 then
         if {actuator_env_check.response.body} matches "(spring|database|password|secret|key)" then
@@ -217,11 +211,11 @@ given request then
 
     # Git config exposed
     send request called git_check:
-        method: "GET"
-        path: `{config_path_4}`
+        replacing method: "GET"
+        replacing path: `{config_path_4}`
 
     if {git_check.response.status_code} is 200 then
-        if {git_check.response.body} matches "(\\[core\\]|\\[remote|repositoryformatversion)" then
+        if {git_check.response.body} matches "(\[core\]|\[remote|repositoryformatversion)" then
             report issue:
                 severity: high
                 confidence: firm
@@ -232,9 +226,8 @@ given request then
 
     # Test 6: Debug Mode Detection
     send request called debug_check:
-        method: "GET"
-        path: `{base.request.url}{debug_param}`
-        headers: {base.request.headers}
+        replacing method: "GET"
+        replacing path: `{base.request.url.path}{debug_param}`
 
     if {debug_check.response.status_code} is 200 then
         if {debug_check.response.body} differs from {base.response.body} then
@@ -251,10 +244,8 @@ given request then
     # Test 7: Prototype Pollution Check
     if {base.request.method} matches "(POST|PUT|PATCH)" then
         send request called proto_check:
-            method: {base.request.method}
-            path: {base.request.url}
-            headers: {base.request.headers}
-            body: `{error_trigger_json}`
+            replacing method: {base.request.method}
+            replacing body: `{error_trigger_json}`
 
         if {proto_check.response.status_code} is 200 then
             if {proto_check.response.body} matches "(isAdmin|admin.*true)" then
@@ -269,12 +260,11 @@ given request then
 
     # Test 8: HTTP Request Smuggling Detection
     send request called smuggling_cl_te:
-        method: "POST"
-        path: {base.request.url}
-        headers: {base.request.headers}
-        appending header: "Transfer-Encoding" => "chunked"
-        appending header: "Content-Length" => "4"
-        body: "0\r\n\r\nG"
+        replacing method: "POST"
+        appending headers:
+            "Transfer-Encoding": "chunked"
+            "Content-Length": "4"
+        replacing body: "0\r\n\r\nG"
 
     if {smuggling_cl_te.response.status_code} is 200 then
         report issue:

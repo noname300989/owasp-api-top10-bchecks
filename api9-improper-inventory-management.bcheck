@@ -43,12 +43,11 @@ define:
 
 given request then
     # Test 1: Old API Version Discovery
-    if {base.request.url} matches "/api/v[0-9]+" then
+    if {base.request.url.path} matches "/api/v[0-9]+" then
         # Extract the base path and try older versions
         send request called old_v0:
-            method: "GET"
-            replacing: regex("/api/v[0-9]+", `{api_v0}`)
-            headers: {base.request.headers}
+            replacing method: "GET"
+            replacing path: {regex_replace({base.request.url.path}, "/api/v[0-9]+", `{api_v0}`)}
 
         if {old_v0.response.status_code} is 200 then
             report issue:
@@ -59,9 +58,8 @@ given request then
         end if
 
         send request called old_v1:
-            method: "GET"
-            replacing: regex("/api/v[0-9]+", `{api_v1}`)
-            headers: {base.request.headers}
+            replacing method: "GET"
+            replacing path: {regex_replace({base.request.url.path}, "/api/v[0-9]+", `{api_v1}`)}
 
         if {old_v1.response.status_code} is 200 then
             if {old_v1.response.body} differs from {base.response.body} then
@@ -76,9 +74,8 @@ given request then
 
     # Test 2: Pre-release/Development API Versions
     send request called beta_check:
-        method: "GET"
-        path: `{api_beta}`
-        headers: {base.request.headers}
+        replacing method: "GET"
+        replacing path: `{api_beta}`
 
     if {beta_check.response.status_code} is 200 then
         report issue:
@@ -89,9 +86,8 @@ given request then
     end if
 
     send request called dev_check:
-        method: "GET"
-        path: `{api_dev}`
-        headers: {base.request.headers}
+        replacing method: "GET"
+        replacing path: `{api_dev}`
 
     if {dev_check.response.status_code} is 200 then
         report issue:
@@ -102,9 +98,8 @@ given request then
     end if
 
     send request called test_check:
-        method: "GET"
-        path: `{api_test}`
-        headers: {base.request.headers}
+        replacing method: "GET"
+        replacing path: `{api_test}`
 
     if {test_check.response.status_code} is 200 then
         report issue:
@@ -115,9 +110,8 @@ given request then
     end if
 
     send request called staging_check:
-        method: "GET"
-        path: `{api_staging}`
-        headers: {base.request.headers}
+        replacing method: "GET"
+        replacing path: `{api_staging}`
 
     if {staging_check.response.status_code} is 200 then
         report issue:
@@ -128,9 +122,8 @@ given request then
     end if
 
     send request called internal_check:
-        method: "GET"
-        path: `{api_internal}`
-        headers: {base.request.headers}
+        replacing method: "GET"
+        replacing path: `{api_internal}`
 
     if {internal_check.response.status_code} is 200 then
         report issue:
@@ -142,8 +135,8 @@ given request then
 
     # Test 3: Undocumented Operational Endpoints
     send request called health_check:
-        method: "GET"
-        path: `{undoc_health}`
+        replacing method: "GET"
+        replacing path: `{undoc_health}`
 
     if {health_check.response.status_code} is 200 then
         if {health_check.response.body} matches "(status|healthy|ok|up|database|redis|cache|queue|version)" then
@@ -156,8 +149,8 @@ given request then
     end if
 
     send request called metrics_check:
-        method: "GET"
-        path: `{undoc_metrics}`
+        replacing method: "GET"
+        replacing path: `{undoc_metrics}`
 
     if {metrics_check.response.status_code} is 200 then
         if {metrics_check.response.body} matches "(metric|counter|gauge|histogram|process_|http_|go_|jvm_|node_)" then
@@ -170,8 +163,8 @@ given request then
     end if
 
     send request called version_check:
-        method: "GET"
-        path: `{undoc_version}`
+        replacing method: "GET"
+        replacing path: `{undoc_version}`
 
     if {version_check.response.status_code} is 200 then
         if {version_check.response.body} matches "(version|build|commit|hash|tag|release|git)" then
@@ -185,8 +178,8 @@ given request then
 
     # Test 4: API Documentation Exposure
     send request called swagger_ui_check:
-        method: "GET"
-        path: `{doc_swagger_ui}`
+        replacing method: "GET"
+        replacing path: `{doc_swagger_ui}`
 
     if {swagger_ui_check.response.status_code} is 200 then
         if {swagger_ui_check.response.body} matches "(swagger|Swagger UI|api-docs)" then
@@ -199,8 +192,8 @@ given request then
     end if
 
     send request called graphql_playground_check:
-        method: "GET"
-        path: `{doc_graphql_playground}`
+        replacing method: "GET"
+        replacing path: `{doc_graphql_playground}`
 
     if {graphql_playground_check.response.status_code} is 200 then
         if {graphql_playground_check.response.body} matches "(GraphQL Playground|graphql-playground|GraphiQL)" then
@@ -213,8 +206,8 @@ given request then
     end if
 
     send request called graphiql_check:
-        method: "GET"
-        path: `{doc_graphiql}`
+        replacing method: "GET"
+        replacing path: `{doc_graphiql}`
 
     if {graphiql_check.response.status_code} is 200 then
         if {graphiql_check.response.body} matches "(GraphiQL|graphiql)" then
@@ -227,14 +220,13 @@ given request then
     end if
 
     # Test 5: API Version in Header bypass
-    if {base.request.url} matches "/api/" then
+    if {base.request.url.path} matches "/api/" then
         send request called version_header_check:
-            method: {base.request.method}
-            path: {base.request.url}
-            headers: {base.request.headers}
-            appending header: "Api-Version" => "1.0"
-            appending header: "X-Api-Version" => "1.0"
-            appending header: "Accept-Version" => "1.0"
+            replacing method: {base.request.method}
+            appending headers:
+                "Api-Version": "1.0"
+                "X-Api-Version": "1.0"
+                "Accept-Version": "1.0"
 
         if {version_header_check.response.status_code} is 200 then
             if {version_header_check.response.body} differs from {base.response.body} then
@@ -248,11 +240,10 @@ given request then
     end if
 
     # Test 6: Shadow API endpoints via common CRUD patterns
-    if {base.request.url} matches "/api/v[0-9]+/([a-z]+)" then
+    if {base.request.url.path} matches "/api/v[0-9]+/([a-z]+)" then
         send request called crud_list:
-            method: "GET"
-            replacing: regex("/api/v[0-9]+/[a-z]+.*", `/api/v1/users`)
-            headers: {base.request.headers}
+            replacing method: "GET"
+            replacing path: {regex_replace({base.request.url.path}, "/api/v[0-9]+/[a-z]+.*", "/api/v1/users")}
 
         if {crud_list.response.status_code} is 200 then
             report issue:
@@ -265,10 +256,9 @@ given request then
 
     # Test 7: Content-Type Discovery for Shadow APIs
     send request called xml_api_check:
-        method: {base.request.method}
-        path: {base.request.url}
-        headers: {base.request.headers}
-        replacing header: "Accept" => "application/xml"
+        replacing method: {base.request.method}
+        replacing headers:
+            "Accept": "application/xml"
 
     if {xml_api_check.response.status_code} is 200 then
         if {xml_api_check.response.headers} matches "application/xml" then
